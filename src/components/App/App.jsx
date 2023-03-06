@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { fetchData } from 'services/pixabay-API';
 import { SearchBar } from '../Searchbar/Searchbar';
 import { ImageGallery } from '../ImageGallery/ImageGallery';
@@ -6,55 +6,47 @@ import { LoadMore } from '../Button/Button';
 import { Loader } from '../Loader/Loader';
 import { Container } from './App.styled';
 import { animateScroll } from 'react-scroll';
-export class App extends Component {
-  state = {
-    query: null,
-    images: [],
-    page: 1,
-    isLoading: false,
-    showLoadMore: false,
-  };
 
-  componentDidUpdate(_, prevState) {
-    const { query, page } = this.state;
-    console.log(page);
+export const App = () => {
+  const [query, setQuery] = useState(null);
+  const [images, setImages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showLoadMore, setShowLoadMore] = useState(false);
 
-    if (page !== prevState.page || query !== prevState.query) {
-      this.setState({
-        isLoading: true,
-      });
-
-      fetchData(query, page)
-        .then(data => {
-          this.setState(prevState => ({
-            images: [...prevState.images, ...data.hits],
-            showLoadMore: page < Math.ceil(data.totalHits / 12),
-          }));
-        })
-        .catch(error => console.log(error))
-        .finally(() => this.setState({ isLoading: false }));
+  useEffect(() => {
+    if (!query) {
+      return;
     }
-  }
 
-  getQueryValue = value => {
-    this.setState({ query: value, page: 1, images: [] });
+    setIsLoading(true);
+
+    fetchData(query, page)
+      .then(({ hits, totalHits }) => {
+        setImages(prevState => [...prevState, ...hits]);
+        setShowLoadMore(page < Math.ceil(totalHits / 12));
+      })
+      .catch(error => console.log(error))
+      .finally(() => setIsLoading(false));
+  }, [page, query]);
+
+  const getQueryValue = value => {
+    setQuery(value);
+    setPage(1);
+    setImages([]);
   };
 
-  onLoad = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
+  const onLoad = () => {
+    setPage(prevState => prevState + 1);
     animateScroll.scrollMore(900, { duration: 1500, delay: 100, smooth: true });
   };
 
-  render() {
-    const { images, isLoading, showLoadMore } = this.state;
-
-    return (
-      <Container>
-        <SearchBar onSubmit={this.getQueryValue} />
-        <ImageGallery data={images} />
-        {isLoading && <Loader />}
-        {!isLoading && showLoadMore && <LoadMore onLoad={this.onLoad} />}
-      </Container>
-    );
-  }
-}
+  return (
+    <Container>
+      <SearchBar onSubmit={getQueryValue} />
+      <ImageGallery data={images} />
+      {isLoading && <Loader />}
+      {!isLoading && showLoadMore && <LoadMore onLoad={onLoad} />}
+    </Container>
+  );
+};

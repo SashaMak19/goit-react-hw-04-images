@@ -1,59 +1,35 @@
-import { Component } from 'react';
+import { useEffect } from 'react';
 import { Overlay, ModalStyled } from './Modal.styled';
 import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
 
 const modalRoot = document.querySelector('#modal-root');
 
-class Modal extends Component {
-  componentDidMount() {
-    window.addEventListener('keydown', this.onCloseModalByEsc);
-  }
+const Modal = ({ image, tags, onClose }) => {
+  useEffect(() => {
+    const onCloseModalByEsc = e => e.code === 'Escape' && onClose();
 
-  componentWillUnmount() {
-    window.removeEventListener('keydown', this.onCloseModalByEsc);
-  }
+    window.addEventListener('keydown', onCloseModalByEsc);
 
-  onCloseModalByEsc = e => {
-    if (e.code === 'Escape') {
-      this.props.onClose();
-    }
-  };
+    return () => window.removeEventListener('keydown', onCloseModalByEsc);
+  }, [onClose]);
 
-  onCloseModalByBackdrop = e => {
-    if (e.currentTarget === e.target) {
-      this.props.onClose();
-    }
-    console.log(e);
-    console.log(e.target);
-    console.log(e.currentTarget);
-  };
+  const onCloseModalByBackdrop = e => e.currentTarget === e.target && onClose();
 
-  render() {
-    const { image, tags } = this.props;
-
-    return createPortal(
-      <Overlay onClick={this.onCloseModalByBackdrop}>
-        <ModalStyled>
-          <img src={image} alt={tags} />
-        </ModalStyled>
-      </Overlay>,
-      modalRoot
-    );
-
-    // return (
-    //   <Overlay onClick={this.onCloseModalByBackdrop}>
-    //     <ModalStyled>
-    //       <img src={image} alt={tags} />
-    //     </ModalStyled>
-    //   </Overlay>
-    // );
-  }
-}
+  return createPortal(
+    <Overlay onClick={onCloseModalByBackdrop}>
+      <ModalStyled>
+        <img src={image} alt={tags} />
+      </ModalStyled>
+    </Overlay>,
+    modalRoot
+  );
+};
 
 Modal.propTypes = {
   image: PropTypes.string.isRequired,
   tags: PropTypes.string.isRequired,
+  onClose: PropTypes.func.isRequired,
 };
 
 export { Modal };
